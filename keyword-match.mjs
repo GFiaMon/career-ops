@@ -108,6 +108,28 @@ export function variantForms(term) {
   if (t.length < 3) return [...forms];
   if (!t.endsWith('s')) forms.add(t + 's');
   else if (t.length > 3) forms.add(t.slice(0, -1));
+  // Non-`-s` plurals, for the localized mode sets. German, Dutch and Polish
+  // form plurals with `-en`, `-n` or `-e`, so the `-s` rules above leave every
+  // one of them unreachable: a German JD's `Klassifizierungen` never finds a
+  // CV's `Klassifizierung`, and the two are the same word. Each suffix is
+  // tested independently because a single word needs different ones to reach
+  // its singular (`klassifizierungen` -> `-en`, `prognosen` -> `-n`).
+  //
+  // Like the rules above, this only ever ADDS a candidate form, and the
+  // boundary-aware counting in countOccurrences() keeps a truncated stem from
+  // matching inside a longer word -- the same argument that makes the
+  // `kubernete` form harmless. The floor of five characters on the remaining
+  // stem is what keeps the junk forms from being short enough to collide with
+  // a real token: `daten` -> `date` and `tage` -> `tag` are both blocked,
+  // while `modelle` -> `modell` and `prognosen` -> `prognose` are not. A
+  // four-character floor would admit `date`, an English word a CV can hold
+  // for an unrelated reason, which is the false positive these forms exist
+  // to avoid.
+  for (const suffix of ['en', 'n', 'e']) {
+    if (!t.endsWith(suffix)) continue;
+    const stem = t.slice(0, -suffix.length);
+    if (stem.length >= 5) forms.add(stem);
+  }
   return [...forms];
 }
 
