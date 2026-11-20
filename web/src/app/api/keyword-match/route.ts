@@ -29,9 +29,11 @@ export async function GET(req: Request) {
   if (!fs.existsSync(script)) return Response.json({ available: false, reason: "no-script", result: null });
 
   const indexed = await pdfPathStatusForReport(id);
-  const cvPath = indexed.status === "found" ? tailoredCvForKeywordMatch(indexed.path) : null;
+  const cvPath = indexed.status === "found" ? tailoredCvForKeywordMatch(indexed.path, indexed.html) : null;
   const args = [script, file, "--json"];
   if (cvPath) args.push("--cv", cvPath);
+  // Without --cv the script reads cv.md, so the panel has to say which one it scored.
+  const cvKind = cvPath ? "tailored" : "base";
 
   const { stdout, stderr, failed } = await new Promise<{ stdout: string; stderr: string; failed: boolean }>((resolve) => {
     // process.execPath + windowsHide: see api/doctor/route.ts. A stale inherited
@@ -47,7 +49,7 @@ export async function GET(req: Request) {
   try {
     const start = stdout.indexOf("{");
     if (start < 0) throw new Error("no JSON");
-    return Response.json({ available: true, reason: null, result: JSON.parse(stdout.slice(start)) });
+    return Response.json({ available: true, reason: null, cvKind, result: JSON.parse(stdout.slice(start)) });
   } catch {
     // The common miss is a report with no `## Keywords extracted` block — older
     // reports and any written before that block existed. The script says so on

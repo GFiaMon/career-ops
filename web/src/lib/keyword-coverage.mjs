@@ -17,7 +17,7 @@
  * @typedef {{term: string}} Kw
  * @typedef {{key: "covered"|"thin"|"missing", label: string, hint: string, terms: string[]}} Tier
  * @typedef {{available: boolean, reason: string|null, total: number, presentCount: number,
- *            coveragePct: number|null, tiers: Tier[]}} CoverageModel
+ *            coveragePct: number|null, cvKind: "tailored"|"base"|null, tiers: Tier[]}} CoverageModel
  */
 
 /**
@@ -67,7 +67,7 @@ export function splitTiers(result) {
  * Accepts null/undefined so a failed fetch can call it directly — an
  * unavailable panel is a normal state here, not an exception.
  *
- * @param {{available?: boolean, reason?: string|null, result?: object|null}|null|undefined} payload
+ * @param {{available?: boolean, reason?: string|null, cvKind?: string|null, result?: object|null}|null|undefined} payload
  * @returns {CoverageModel}
  */
 export function coverageModel(payload) {
@@ -78,6 +78,7 @@ export function coverageModel(payload) {
       total: 0,
       presentCount: 0,
       coveragePct: null,
+      cvKind: null,
       tiers: [],
     };
   }
@@ -92,6 +93,9 @@ export function coverageModel(payload) {
     // A percentage over no keywords is not 0% coverage, it is no measurement —
     // the same rule the analytics rates follow.
     coveragePct: total > 0 && Number.isFinite(r.coveragePct) ? r.coveragePct : null,
+    // Which CV the route scored: the report's tailored CV, or cv.md when none
+    // is indexed. Anything else is unknown, and the panel then names neither.
+    cvKind: payload.cvKind === "tailored" || payload.cvKind === "base" ? payload.cvKind : null,
     tiers: splitTiers(r),
   };
 }

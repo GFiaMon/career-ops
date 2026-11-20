@@ -23,6 +23,11 @@ const BAND_CLASS: Record<string, string> = {
   unknown: "text-faint",
 };
 
+const CV_LABEL: Record<string, string> = {
+  tailored: "this JD vs the tailored CV for this report",
+  base: "this JD vs cv.md, your base CV",
+};
+
 const REASON_COPY: Record<string, string> = {
   "no-keywords": "This report has no “Keywords extracted” block, so there is nothing to compare the CV against.",
   "no-script": "keyword-match.mjs isn’t in this career-ops checkout.",
@@ -71,7 +76,7 @@ export function KeywordCoverage({ reportId }: { reportId: string }) {
 
   return (
     <section className="mt-8 rounded-2xl border border-border bg-surface/40 px-5 py-4">
-      <Header />
+      <Header cvKind={model.cvKind} />
 
       <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className={`text-3xl tabular-nums ${BAND_CLASS[band]}`}>
@@ -81,6 +86,11 @@ export function KeywordCoverage({ reportId }: { reportId: string }) {
           {model.presentCount} of {model.total} JD keyword{model.total === 1 ? "" : "s"} found in your CV
         </span>
       </div>
+      {model.cvKind === "base" ? (
+        <p className="mt-1 text-xs text-muted">
+          No tailored CV is indexed for this report, so this is cv.md before per-role tailoring.
+        </p>
+      ) : null}
 
       <div className="mt-4 grid gap-3">
         {model.tiers.map((tier) =>
@@ -116,12 +126,12 @@ export function KeywordCoverage({ reportId }: { reportId: string }) {
   );
 }
 
-function Header() {
+function Header({ cvKind = null }: { cvKind?: string | null }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <ScanSearch className="size-4 text-brand-text" />
       <h2 className="font-display text-base text-landing">ATS keyword coverage</h2>
-      <span className="text-xs text-faint">this JD vs your CV</span>
+      <span className="text-xs text-faint">{(cvKind && CV_LABEL[cvKind]) ?? "this JD vs your CV"}</span>
     </div>
   );
 }
